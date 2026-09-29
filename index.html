@@ -3,24 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#e6def5">
+<script>
+  /* Apply saved theme before first paint (no flash). Falls back to the OS setting. */
+  (function(){var t;try{t=localStorage.getItem('theme')}catch(e){}
+    if(!t)t=(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
+    document.documentElement.setAttribute('data-theme',t);})();
+</script>
 <title>Disereless — All My Links</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Cairo:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   /* ===== COLOR & STYLE TOKENS =====
      Change a value here and it updates everywhere that uses it. */
   :root{
-    --ink:#141110;      /* near-black: borders, text, shadows */
-    --bg:#FFF6DE;        /* page background (cream) */
-    --paper:#FFFFFF;     /* card background (white) */
-    --purple:#7C5CFF;    /* accent 1 — hub link icon */
-    --pink:#FF4FA0;      /* accent 2 — lang toggle knob */
-    --yellow:#FFD23F;    /* accent 3 — lang toggle bg, tip card */
-    --mint:#00D9A3;      /* accent 4 — handle badge */
-    --red:#FF4D4D;       /* accent 5 — YouTube icon color */
-    --border:3px solid var(--ink);      /* the thick neobrutalist outline used everywhere */
-    --shadow:6px 6px 0 var(--ink);      /* big hard-edge shadow (no blur) for large blocks */
-    --shadow-sm:4px 4px 0 var(--ink);   /* smaller hard-edge shadow for cards/buttons */
+    /* ===== LIGHT THEME (default) — neobrutalist look, softer colors ===== */
+    color-scheme:light;
+    --bg:#cfc6df;          /* page: soft lilac instead of the harsh purple */
+    --paper:#fbf8f1;       /* cards: warm off-white */
+    --paper-2:#fbf8f1;
+    --featured:#fbe6a4;    /* highlighted card: soft butter yellow */
+    --featured-line:#1d1a26;
+    --ink:#1d1a26;         /* text (soft near-black, not pure black) */
+    --muted:#5d5769;       /* secondary text */
+    --line:#1d1a26;        /* outlines */
+    --shade:#1d1a26;       /* hard shadows */
+    --grid:rgba(29,26,38,.055);
+    --overlay:rgba(29,26,38,.55);
+    --purple:#6f56e6;
+    --link:#5a41d4;        /* purple used for text/links */
+    --pink:#ee7bab;
+    --yellow:#f5c65a;
+    --mint:#5fd1ab;
+    --red:#ea5f5f;
+    --tt:#1d1a26;          /* TikTok icon bg */
+    --bw:3px;
+    --border:var(--bw) solid var(--line);
+    --shadow:6px 6px 0 var(--shade);
+    --shadow-sm:4px 4px 0 var(--shade);
+    --shadow-hover:7px 7px 0 var(--shade);
+  }
+  /* ===== DARK THEME — neutral dark gray (no blue tint) ===== */
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#1c1c1e;
+    --paper:#272729;
+    --paper-2:#313134;
+    --featured:#313134;
+    --featured-line:#8f7cf0;
+    --ink:#e6e6e8;
+    --muted:#a7a7ae;
+    --line:#48484d;
+    --shade:#0c0c0d;
+    --grid:rgba(255,255,255,.03);
+    --overlay:rgba(0,0,0,.72);
+    --purple:#7461e8;
+    --link:#b5abff;
+    --pink:#d96a98;
+    --yellow:#e6b95c;
+    --mint:#62c8a6;
+    --red:#dc5f5f;
+    --tt:#101011;
+    --bw:2px;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{
@@ -37,9 +81,9 @@
     display:flex;flex-direction:column;align-items:center;
     /* the faint grid-paper look behind everything */
     background-image:
-      linear-gradient(var(--ink) 1px, transparent 1px),
-      linear-gradient(90deg, var(--ink) 1px, transparent 1px);
-    background-size:34px 34px;
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:34px 34px;-webkit-font-smoothing:antialiased;
     background-position:-1px -1px;
   }
   /* when the page is switched to Arabic, dir="rtl" is set on <body> — lead with Cairo,
@@ -47,16 +91,22 @@
   body[dir="rtl"]{font-family:'Cairo','Space Grotesk',sans-serif}
 
   /* ===== LANGUAGE TOGGLE (top pill, EN / عربي) ===== */
-  .lang-switch{
-    position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:40;
-    display:flex;align-items:center;direction:ltr; /* keep EN left / AR right regardless of page direction */
-    background:var(--yellow);border:var(--border);border-radius:999px;
+    /* ===== TOOLBAR: theme slider + language slider, fixed at top ===== */
+  .toolbar{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:10px;direction:ltr}
+  .lang-switch,.theme-switch{
+    position:relative;display:flex;align-items:center;direction:ltr;
+    background:var(--paper);border:var(--border);border-radius:999px;
     padding:4px;cursor:pointer;user-select:none;box-shadow:var(--shadow-sm);
   }
-  .lang-switch .opt{position:relative;z-index:2;padding:7px 18px;border-radius:999px;font-size:14px;font-weight:700;color:var(--ink);opacity:.5;transition:opacity .2s ease}
-  .lang-switch .opt.active{opacity:1} /* the currently-selected label (EN or عربي) is full opacity */
+  .theme-switch .opt{position:relative;z-index:2;padding:7px 12px;border-radius:999px;color:var(--muted);transition:color .2s ease;display:flex;align-items:center}
+  .theme-switch .opt.active{color:#fff}
+  .theme-switch .opt svg{width:18px;height:18px}
+  .theme-switch.dark .lang-knob{transform:translateX(100%)}
+  body{transition:background-color .25s ease,color .25s ease}
+  .lang-switch .opt{position:relative;z-index:2;padding:7px 18px;border-radius:999px;font-size:14px;font-weight:700;color:var(--muted);transition:color .2s ease}
+  .lang-switch .opt.active{color:#fff} /* the currently-selected label (EN or عربي) is full opacity */
   /* the sliding pink "knob" behind the active label */
-  .lang-knob{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:var(--pink);border:2px solid var(--ink);transition:transform .25s cubic-bezier(.2,1,.4,1);z-index:1}
+  .lang-knob{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:var(--purple);border:2px solid var(--line);transition:transform .25s cubic-bezier(.2,1,.4,1);z-index:1}
   .lang-switch.ar .lang-knob{transform:translateX(100%)} /* JS adds class "ar" to slide the knob right */
 
   .container{position:relative;z-index:1;width:100%;max-width:560px;padding:130px 20px 48px;display:flex;flex-direction:column;align-items:center}
@@ -72,7 +122,7 @@
   h1{font-size:32px;font-weight:700;letter-spacing:-.5px}
   /* the little "@disereless" tag under the name */
   .handle{
-    display:inline-block;margin-top:8px;background:var(--mint);border:2px solid var(--ink);
+    color:#0f2b22;display:inline-block;margin-top:8px;background:var(--mint);border:2px solid var(--line);
     padding:3px 12px;font-weight:700;font-size:13px;transform:rotate(-1deg);
   }
   .bio{color:var(--ink);text-align:center;margin-top:16px;font-size:15px;line-height:1.7;max-width:440px;font-weight:500}
@@ -87,53 +137,53 @@
     position:relative;
   }
   /* hover = card "lifts" up-left and its shadow grows, giving a pressable feel */
-  .link-card:hover{transform:translate(-3px,-3px);box-shadow:7px 7px 0 var(--ink)}
+  .link-card:hover{transform:translate(-3px,-3px);box-shadow:var(--shadow-hover)}
   /* active (click) = card "presses down" into its shadow */
-  .link-card:active{transform:translate(0,0);box-shadow:1px 1px 0 var(--ink)}
+  .link-card:active{transform:translate(0,0);box-shadow:1px 1px 0 var(--shade)}
 
   /* the small colored square icon on the left of every link card */
-  .icon{width:46px;height:46px;min-width:46px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center}
+  .icon{width:46px;height:46px;min-width:46px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center}
   .icon svg{width:22px;height:22px}
   .ic-yt{background:var(--red)}      /* YouTube */
   .ic-ytpage{background:var(--purple)} /* YouTube Hub link */
   .ic-ig{background:var(--pink)}     /* Instagram */
-  .ic-tt{background:var(--ink)}      /* TikTok */
-  .ic-dc{background:#7289FF}         /* Discord */
+  .ic-tt{background:var(--line)}      /* TikTok */
+  .ic-dc{background:#6674d9}         /* Discord */
   .ic-mail{background:var(--yellow)} /* Email */
   .link-text{display:flex;flex-direction:column;flex:1;min-width:0;text-align:start}
   .link-title{font-weight:700;font-size:16px}
-  .link-sub{color:#4b4640;font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+  .link-sub{color:var(--muted);font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
   .arrow{color:var(--ink);font-size:18px;font-weight:700;transition:transform .12s ease}
   .link-card:hover .arrow{transform:translateX(4px)} /* arrow nudges right on hover */
   /* in Arabic (RTL) the arrow visually flips so it still points "forward" */
   body[dir="rtl"] .arrow{display:inline-block;transform:scaleX(-1)}
   body[dir="rtl"] .link-card:hover .arrow{transform:scaleX(-1) translateX(4px)}
 
-  .featured{background:var(--yellow)} /* the highlighted "YouTube Hub" card */
-  .featured .link-sub{color:#3a3630}
+  .featured{background:var(--featured);border-color:var(--featured-line)} /* the highlighted "YouTube Hub" card */
+  .featured .link-sub{color:var(--muted)}
 
   /* ===== "COPIED!" TOAST (bottom pop-up after clicking Discord) ===== */
   .toast{
     position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(90px); /* hidden below screen by default */
-    background:var(--mint);color:var(--ink);font-weight:700;
+    background:var(--mint);color:#0f2b22;font-weight:700;
     padding:12px 24px;border:var(--border);font-size:14px;box-shadow:var(--shadow-sm);
     transition:transform .3s cubic-bezier(.2,1.2,.4,1);z-index:10;
   }
   .toast.show{transform:translateX(-50%) translateY(0)} /* JS adds "show" class to slide it up */
 
   footer{position:relative;z-index:1;color:var(--ink);font-size:13px;font-weight:700;padding:0 0 30px;text-align:center}
-  footer span{background:var(--purple);color:#fff;padding:2px 10px;border:2px solid var(--ink)}
+  footer span{background:var(--purple);color:#fff;padding:2px 10px;border:2px solid var(--line)}
 
   /* ===== FIRST-VISIT LANGUAGE TIP POPUP ===== */
   .tip-overlay{
-    position:fixed;inset:0;z-index:30;background:rgba(20,17,16,.7);
+    position:fixed;inset:0;z-index:30;background:var(--overlay);
     display:flex;align-items:flex-start;justify-content:center;
     opacity:0;pointer-events:none;transition:opacity .3s ease; /* invisible + unclickable until shown */
   }
   .tip-overlay.show{opacity:1;pointer-events:auto} /* JS adds "show" after a short delay, once per visitor */
   .tip-card{
     margin-top:88px;max-width:360px;width:calc(100% - 40px);
-    background:var(--yellow);border:var(--border);padding:26px 24px;text-align:center;
+    background:var(--featured);border:var(--border);padding:26px 24px;text-align:center;
     box-shadow:var(--shadow);transform:translateY(14px) rotate(-1deg);
     transition:transform .35s cubic-bezier(.2,1.2,.4,1);
   }
@@ -142,28 +192,38 @@
   @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   .tip-title{font-size:19px;font-weight:700;margin-top:10px}
   .tip-text{color:var(--ink);font-size:14px;line-height:1.7;margin-top:10px;font-weight:500}
-  .tip-text b{background:var(--pink);padding:0 4px;border:1px solid var(--ink)}
+  .tip-text b{background:var(--purple);color:#fff;padding:0 6px;border-radius:2px}
   .tip-text .ar-line{font-family:'Cairo',sans-serif;direction:rtl;display:block;margin-top:8px}
   .tip-btn{
     margin-top:18px;width:100%;border:var(--border);cursor:pointer;
-    background:var(--ink);color:var(--bg);font-weight:700;font-size:15px;
+    background:var(--purple);color:#fff;font-weight:700;font-size:15px;
     padding:12px;box-shadow:var(--shadow-sm);transition:transform .12s ease;
   }
-  .tip-btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+  .tip-btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--shade)}
 
   /* smaller screens: shrink the big name + avatar a bit */
   @media (max-width:420px){
     h1{font-size:26px}
     .avatar{width:96px;height:96px}
   }
+  /* ===== تحسينات بسيطة ===== */
+  a:focus-visible,.lang-switch:focus-visible,button:focus-visible{outline:3px solid var(--link);outline-offset:3px}
+  ::selection{background:var(--purple);color:#fff}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<!-- Language toggle pill, fixed at the top of every page -->
-<div class="lang-switch" id="langSwitch">
-  <div class="lang-knob"></div>
-  <div class="opt active" data-lang="en">EN</div>
-  <div class="opt" data-lang="ar">عربي</div>
+<div class="toolbar">
+  <div class="theme-switch" id="themeSwitch" role="button" aria-label="Toggle light / dark theme">
+    <div class="lang-knob"></div>
+    <div class="opt active" data-theme="light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div>
+    <div class="opt" data-theme="dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div>
+  </div>
+  <div class="lang-switch" id="langSwitch">
+    <div class="lang-knob"></div>
+    <div class="opt active" data-lang="en">EN</div>
+    <div class="opt" data-lang="ar">عربي</div>
+  </div>
 </div>
 
 <div class="container">
@@ -250,7 +310,7 @@
 
     <a class="link-card" href="mailto:mmmarahmad125@gmail.com">
       <div class="icon ic-mail">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m2 7 10 7L22 7"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1b1608" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m2 7 10 7L22 7"/></svg>
       </div>
       <div class="link-text">
         <span class="link-title" data-i18n="mail_title">Email Me</span>
@@ -318,6 +378,24 @@
       toast: 'تم نسخ يوزر الديسكورد! ✓'
     }
   };
+
+  
+  // ===== THEME SLIDER (light / dark) — choice is saved and shared between both pages =====
+  const themeSw = document.getElementById('themeSwitch');
+  function setTheme(t){
+    document.documentElement.setAttribute('data-theme', t);
+    themeSw.classList.toggle('dark', t === 'dark');
+    themeSw.querySelectorAll('.opt').forEach(function(o){
+      o.classList.toggle('active', o.getAttribute('data-theme') === t);
+    });
+    var m = document.querySelector('meta[name="theme-color"]');
+    if(m) m.setAttribute('content', t === 'dark' ? '#1c1c1e' : '#e6def5');
+    try{ localStorage.setItem('theme', t); }catch(e){}
+  }
+  themeSw.addEventListener('click', function(){
+    setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+  setTheme(document.documentElement.getAttribute('data-theme') || 'light');
 
   const sw = document.getElementById('langSwitch');
 
